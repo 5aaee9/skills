@@ -8,7 +8,7 @@ Usage:
   printf '%s\n' "message" | run_opencode_agent.sh [--model provider/model]
 
 Writes the delegated task message to a mktemp file and runs:
-  opencode run --dangerously-skip-permissions -i [-m provider/model] -f <file>
+  opencode run --dangerously-skip-permissions [-m provider/model] < <file>
 USAGE
 }
 
@@ -67,11 +67,10 @@ trap cleanup EXIT
 
 printf '%s\n' "$message" > "$prompt_file"
 
-cmd=(opencode run --dangerously-skip-permissions -i)
+cmd=(opencode run --dangerously-skip-permissions)
 if [[ -n "$model" ]]; then
   cmd+=(-m "$model")
 fi
-cmd+=(-f "$prompt_file")
 
 if ((dry_run)); then
   printf 'Prompt file: %s\n' "$prompt_file"
@@ -82,4 +81,4 @@ if ((dry_run)); then
   exit 0
 fi
 
-exec "${cmd[@]}"
+exec "${cmd[@]}" < "$prompt_file"

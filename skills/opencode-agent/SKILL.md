@@ -16,16 +16,16 @@ Use `opencode` as an external sub-agent for bounded tasks. Preserve the user's r
    - relevant files, paths, commands, or constraints
    - permission boundaries and stop condition
 2. Write that full message to a temporary file created with `mktemp`.
-3. Run:
+3. Run (pipe the prompt file into opencode's stdin; this avoids any shell-escaping or ARG_MAX issues and works in non-TTY environments):
 
 ```bash
-opencode run --dangerously-skip-permissions -i -f "$prompt_file"
+opencode run --dangerously-skip-permissions < "$prompt_file"
 ```
 
 4. If the user specified a model, add `-m "$provider_model"`:
 
 ```bash
-opencode run --dangerously-skip-permissions -i -m "$provider_model" -f "$prompt_file"
+opencode run --dangerously-skip-permissions -m "$provider_model" < "$prompt_file"
 ```
 
 5. Read the opencode result, verify anything it claims before relying on it, then summarize the actionable outcome for the user.
@@ -56,9 +56,9 @@ The helper:
 
 - create a `mktemp` prompt file
 - write the message into that file
-- pass the file via `-f`
+- feed the file to opencode's stdin
 - include `-m` only when `--model` is provided
-- always include `--dangerously-skip-permissions -i`
+- always include `--dangerously-skip-permissions` (never `-i`, which requires a TTY and blocks in non-interactive contexts)
 - delete the temporary file after opencode exits
 
 ## Guardrails
