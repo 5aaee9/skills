@@ -5,7 +5,7 @@ description: Use when the user invokes $sdd-workflow or asks for spec-driven dev
 
 # SDD Workflow
 
-Run a spec-driven development loop that combines Superpowers planning with independent subagent review gates and subagent-driven implementation. Do not wait for explicit user approval unless the work is destructive, credential-gated, production-impacting, or materially scope-changing. Do not treat any gated phase as complete until the required reviewer subagent returns the literal verdict line `VERDICT: APPROVE`.
+Run a spec-driven development loop that combines Superpowers planning with independent review gates and subagent-driven implementation. Do not wait for explicit user approval unless the work is destructive, credential-gated, production-impacting, or materially scope-changing. Do not treat any gated phase as complete until every required reviewer returns the literal verdict line `VERDICT: APPROVE`.
 
 ## Required Skills
 
@@ -16,19 +16,28 @@ Load and follow these skills at the relevant phase:
 - `superpowers:subagent-driven-development` to implement the reviewed plan with fresh implementer/reviewer subagents.
 - `superpowers:verification-before-completion` before claiming completion, committing, or pushing.
 - `superpowers:requesting-code-review` when an independent code/spec review is needed and the active subagent workflow does not already provide one.
+- `opencode-agent` for spec/design, plan, and final implementation review when it is available.
 
 ## Hard Gates
 
-Approval in this workflow means **independent reviewer subagent approval only**. A gate is satisfied by a reviewer subagent returning a verdict line exactly matching `VERDICT: APPROVE`; user approval is neither requested nor accepted as a substitute unless a safety gate below requires user input. If a runtime status says "spec approval gate", interpret it as "spec reviewer subagent verdict gate".
+Approval in this workflow means **all required independent reviewers approve**. A gate is satisfied only when every required reviewer returns a verdict line exactly matching `VERDICT: APPROVE`; user approval is neither requested nor accepted as a substitute unless a safety gate below requires user input. If a runtime status says "spec approval gate", interpret it as "spec reviewer verdict gate".
+
+Required reviewers for spec/design, implementation plan, and final spec implementation:
+
+- Always dispatch an independent reviewer subagent.
+- If `opencode-agent` is available, also run the same bounded review through `opencode-agent`.
+- When running `opencode-agent`, use opencode's default model by not passing `-m`, unless the user specified an opencode model for this workflow; if the user specified one, pass exactly that model.
+- A review gate passes only when the independent reviewer subagent and, when available, the opencode reviewer both return `VERDICT: APPROVE`.
+- If either reviewer returns `VERDICT: REVISE` or omits the exact approve verdict, revise and re-run both required reviewers for that gate.
 
 - Do not require explicit user approval for the spec, plan, or implementation unless the user specifically asks for it or a safety gate requires it.
-- Never block with a message asking the user to approve the spec/plan/implementation. Instead, dispatch or re-dispatch the required independent reviewer subagent and continue until that subagent returns `VERDICT: APPROVE`.
-- Use an independent reviewer agent for the spec/design. Continue revising the spec/design until the reviewer returns `VERDICT: APPROVE`.
-- Do not write implementation code before the spec/design and plan have both passed independent subagent review.
-- Use an independent reviewer agent for the implementation plan. Continue revising the plan until the reviewer returns `VERDICT: APPROVE`.
+- Never block with a message asking the user to approve the spec/plan/implementation. Instead, dispatch or re-dispatch the required reviewers and continue until all required reviewers return `VERDICT: APPROVE`.
+- Use the required reviewers for the spec/design. Continue revising the spec/design until all required reviewers return `VERDICT: APPROVE`.
+- Do not write implementation code before the spec/design and plan have both passed all required reviews.
+- Use the required reviewers for the implementation plan. Continue revising the plan until all required reviewers return `VERDICT: APPROVE`.
 - Use subagent-driven development for implementation. Prefer fresh, bounded subagents with explicit file ownership and context.
-- After implementation, use an independent reviewer agent to check the final implementation against the reviewed spec. Continue fixing and re-reviewing until the reviewer returns `VERDICT: APPROVE`.
-- Only after spec-compliance `VERDICT: APPROVE`, update relevant docs, run fresh verification, then `git commit` and `git push`.
+- After implementation, use the required reviewers to check the final implementation against the reviewed spec. Continue fixing and re-reviewing until all required reviewers return `VERDICT: APPROVE`.
+- Only after spec-compliance approval from all required reviewers, update relevant docs, run fresh verification, then `git commit` and `git push`.
 - If `git push` is blocked by missing credentials, network failure, remote rejection, or branch policy, report the blocker with the successful local commit SHA and exact push error.
 
 ## Workflow
@@ -38,12 +47,12 @@ Approval in this workflow means **independent reviewer subagent approval only**.
 1. Announce that `$sdd-workflow` is active.
 2. Use `superpowers:brainstorming` to inspect the repo, clarify only material ambiguity, and write the spec/design file.
 3. Do not pause for explicit user approval of the spec/design artifact. Proceed once the artifact is concrete enough for independent subagent review; ask the user only for destructive, credential-gated, production-impacting, materially scope-changing, or genuinely ambiguous decisions.
-4. Dispatch an independent reviewer agent with only:
+4. Dispatch the required reviewers with only:
    - the spec/design path and content,
    - relevant repo constraints,
    - the required verdict format below.
-5. Require the reviewer to evaluate completeness, acceptance criteria, ambiguity, safety/rollback, docs impact, and whether the spec/design is concrete enough to plan from.
-6. If the reviewer returns anything other than `VERDICT: APPROVE`, revise the spec/design and re-review.
+5. Require each reviewer to evaluate completeness, acceptance criteria, ambiguity, safety/rollback, docs impact, and whether the spec/design is concrete enough to plan from.
+6. If any required reviewer returns anything other than `VERDICT: APPROVE`, revise the spec/design and re-review with all required reviewers.
 
 Spec/design review verdict format:
 
@@ -58,13 +67,13 @@ REQUIRED_CHANGES:
 ### 2. Write and independently review the plan
 
 1. Use `superpowers:writing-plans` to create a plan from the reviewed spec.
-2. Dispatch an independent reviewer agent with only:
+2. Dispatch the required reviewers with only:
    - the spec/design path and content,
    - the plan path and content,
    - relevant repo constraints,
    - the required verdict format below.
-3. Require the reviewer to evaluate completeness, task order, test strategy, docs coverage, rollback/safety, and whether the plan is implementable by subagents.
-4. If the reviewer returns anything other than `VERDICT: APPROVE`, revise the plan and re-review.
+3. Require each reviewer to evaluate completeness, task order, test strategy, docs coverage, rollback/safety, and whether the plan is implementable by subagents.
+4. If any required reviewer returns anything other than `VERDICT: APPROVE`, revise the plan and re-review with all required reviewers.
 
 Plan review verdict format:
 
@@ -76,7 +85,7 @@ REQUIRED_CHANGES:
 - [change or "None"]
 ```
 
-Proceed only when the independent plan reviewer subagent returns `VERDICT: APPROVE`.
+Proceed only when all required plan reviewers return `VERDICT: APPROVE`.
 
 ### 3. Implement using subagent-driven development
 
@@ -88,7 +97,7 @@ Proceed only when the independent plan reviewer subagent returns `VERDICT: APPRO
 
 ### 4. Independently review spec implementation
 
-After the plan is implemented, dispatch a fresh independent reviewer agent to compare the final diff against the reviewed spec.
+After the plan is implemented, dispatch the required reviewers to compare the final diff against the reviewed spec.
 
 Reviewer input must include:
 
@@ -110,11 +119,11 @@ REQUIRED_CHANGES:
 - [change or "None"]
 ```
 
-If the verdict is `REVISE`, fix the gaps, rerun verification, and re-review. Do not claim the spec is implemented until `VERDICT: APPROVE` appears.
+If any required reviewer returns `REVISE`, fix the gaps, rerun verification, and re-review with all required reviewers. Do not claim the spec is implemented until every required reviewer returns `VERDICT: APPROVE`.
 
 ### 5. Update docs, verify, commit, and push
 
-After spec implementation receives `VERDICT: APPROVE`:
+After spec implementation receives `VERDICT: APPROVE` from all required reviewers:
 
 1. Update relevant documentation, examples, changelogs, or usage notes required by the spec/plan.
 2. Run fresh verification using `superpowers:verification-before-completion`; include tests, lint, typecheck, build, or targeted smoke checks appropriate for the repo.
@@ -125,7 +134,7 @@ After spec implementation receives `VERDICT: APPROVE`:
 
 ## Reviewer Prompt Templates
 
-Use these as compact prompts for independent reviewers.
+Use these as compact prompts for independent reviewers. For opencode review, pass the same prompt through `opencode-agent`; use opencode's default model unless the user specified an opencode model for the workflow.
 
 ### Plan reviewer
 
