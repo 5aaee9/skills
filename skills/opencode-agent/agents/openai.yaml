@@ -1,0 +1,4 @@
+interface:
+  display_name: "OpenCode Agent"
+  short_description: "Run delegated tasks through opencode"
+  default_prompt: "Use $opencode-agent to delegate this task to opencode with a third-party model."
