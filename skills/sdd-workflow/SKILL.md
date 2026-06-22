@@ -26,9 +26,10 @@ Required reviewers for spec/design, implementation plan, and final spec implemen
 
 - Always dispatch an independent reviewer subagent.
 - If `opencode-agent` is available, also run the same bounded review through `opencode-agent`.
-- When running `opencode-agent`, use opencode's default model by not passing `-m`, unless the user specified an opencode model for this workflow; if the user specified one, pass exactly that model.
-- A review gate passes only when the independent reviewer subagent and, when available, the opencode reviewer both return `VERDICT: APPROVE`.
-- If either reviewer returns `VERDICT: REVISE` or omits the exact approve verdict, revise and re-run both required reviewers for that gate.
+- When `opencode-agent` is available and the user did not specify an opencode model, run one opencode review using opencode's default model by not passing `-m`.
+- When `opencode-agent` is available and the user specified one or more opencode models, run a separate opencode review for each specified model and pass that model exactly with `-m`.
+- A review gate passes only when the independent reviewer subagent and every required opencode review return `VERDICT: APPROVE`.
+- If any reviewer returns `VERDICT: REVISE` or omits the exact approve verdict, revise and re-run all required reviewers for that gate until every reviewer approves.
 
 - Do not require explicit user approval for the spec, plan, or implementation unless the user specifically asks for it or a safety gate requires it.
 - Never block with a message asking the user to approve the spec/plan/implementation. Instead, dispatch or re-dispatch the required reviewers and continue until all required reviewers return `VERDICT: APPROVE`.
@@ -134,7 +135,7 @@ After spec implementation receives `VERDICT: APPROVE` from all required reviewer
 
 ## Reviewer Prompt Templates
 
-Use these as compact prompts for independent reviewers. For opencode review, pass the same prompt through `opencode-agent`; use opencode's default model unless the user specified an opencode model for the workflow.
+Use these as compact prompts for independent reviewers. For opencode review, pass the same prompt through `opencode-agent`; use opencode's default model when no opencode model is specified, or run one review per user-specified opencode model when the user names multiple models.
 
 ### Plan reviewer
 
