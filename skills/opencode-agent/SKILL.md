@@ -32,25 +32,31 @@ opencode run --dangerously-skip-permissions -m "$provider_model" < "$prompt_file
 
 ## Helper Script
 
-Use the bundled helper at `scripts/run_opencode_agent.sh` when possible to avoid command construction mistakes. Resolve this path relative to this `SKILL.md` file's directory; do not hardcode an installation path or assume a specific home directory.
+A bundled helper at `scripts/run_opencode_agent.sh` (inside this skill's directory) avoids command construction mistakes. Because the skill's install path varies and "relative to this file" is unreliable for the consuming agent, resolve the helper's absolute path with this locator first — it searches the standard skill roots by skill name and works from any CWD:
+
+```bash
+OPENCODE_AGENT_HELPER="$(find "$HOME/.agents/skills" "$HOME/.config/opencode/skills" -type f -path '*/opencode-agent/scripts/run_opencode_agent.sh' 2>/dev/null | head -1)"
+```
 
 Examples:
 
 ```bash
 # Message from stdin, no model.
 printf '%s\n' "Inspect this repo and report the test command." \
-  | scripts/run_opencode_agent.sh
+  | "$OPENCODE_AGENT_HELPER"
 
 # Message from a shell argument, with a model.
-scripts/run_opencode_agent.sh \
+"$OPENCODE_AGENT_HELPER" \
   --model anthropic/claude-sonnet-4-5 \
   "Review src/app.ts for obvious bugs."
 
 # Preview the exact command without running opencode.
-scripts/run_opencode_agent.sh \
+"$OPENCODE_AGENT_HELPER" \
   --dry-run --model openrouter/google/gemini-2.5-pro \
   "Explain the public API in this package."
 ```
+
+If the helper cannot be located (e.g. `OPENCODE_AGENT_HELPER` is empty), fall back to the direct `opencode run` command from the Workflow section above — it needs no external script.
 
 The helper:
 
